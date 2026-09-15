@@ -71,27 +71,25 @@ namespace lmap {
   using Point = LCC::Point;
   using Vector = LCC::Vector;
 
-  namespace geom {
-    inline double norm(const Vector& v) { return std::sqrt(CGAL::to_double(v.squared_length())); }
+  inline double norm(const Vector& v) { return std::sqrt(CGAL::to_double(v.squared_length())); }
 
-    inline Vector normalized(const Vector& v) {
-      const double n = norm(v);
-      if (n < 1e-14) return Vector(0, 0, 0);
-      return v / n;
-    }
+  inline Vector normalized(const Vector& v) {
+    const double n = norm(v);
+    if (n < 1e-14) return Vector(0, 0, 0);
+    return v / n;
+  }
 
-    inline Vector newell_normal(const std::vector<Point>& p) {
-      double nx = 0, ny = 0, nz = 0;
-      const std::size_t m = p.size();
-      for (std::size_t i = 0; i < m; ++i) {
-        const Point& a = p[i];
-        const Point& b = p[(i + 1) % m];
-        nx += (a.y() - b.y()) * (a.z() + b.z());
-        ny += (a.z() - b.z()) * (a.x() + b.x());
-        nz += (a.x() - b.x()) * (a.y() + b.y());
-      }
-      return Vector(nx, ny, nz);
+  inline Vector newell_normal(const std::vector<Point>& p) {
+    double nx = 0, ny = 0, nz = 0;
+    const std::size_t m = p.size();
+    for (std::size_t i = 0; i < m; ++i) {
+      const Point& a = p[i];
+      const Point& b = p[(i + 1) % m];
+      nx += (a.y() - b.y()) * (a.z() + b.z());
+      ny += (a.z() - b.z()) * (a.x() + b.x());
+      nz += (a.x() - b.x()) * (a.y() + b.y());
     }
+    return Vector(nx, ny, nz);
   }
 
   struct Frame {
@@ -103,14 +101,14 @@ namespace lmap {
     static Frame from_ez_ex(const Point& o, const Vector& ez_in, const Vector& ex_hint) {
       Frame f;
       f.origin = o;
-      f.ez = geom::normalized(ez_in);
+      f.ez = normalized(ez_in);
       Vector ex = ex_hint - (ex_hint * f.ez) * f.ez;
-      if (geom::norm(ex) < 1e-9) {
+      if (norm(ex) < 1e-9) {
         Vector alt(1, 0, 0);
         ex = alt - (alt * f.ez) * f.ez;
-        if (geom::norm(ex) < 1e-9) { alt = Vector(0, 1, 0); ex = alt - (alt * f.ez) * f.ez; }
+        if (norm(ex) < 1e-9) { alt = Vector(0, 1, 0); ex = alt - (alt * f.ez) * f.ez; }
       }
-      f.ex = geom::normalized(ex);
+      f.ex = normalized(ex);
       f.ey = CGAL::cross_product(f.ez, f.ex);
       return f;
     }
@@ -259,7 +257,7 @@ namespace lmap {
     }
 
     Vector face_outward_normal(CDart d) const {
-      return geom::normalized(geom::newell_normal(face_loop(d)));
+      return normalized(newell_normal(face_loop(d)));
     }
 
     bool is_glued(const Face_ref& f) const { return !lcc.is_free<3>(dart_of(f)); }
@@ -308,7 +306,7 @@ namespace lmap {
         const std::vector<Point> P = face_loop(ds);
         const std::size_t m = P.size();
 
-        const Vector ez = geom::normalized(geom::newell_normal(P));
+        const Vector ez = normalized(newell_normal(P));
         Frame base_frame = Frame::from_ez_ex(P[0], ez, Vector(0, 0, 1));
 
         Volume_attributes attr = defaults;
@@ -349,6 +347,25 @@ namespace lmap {
         created.push_back(nid);
       }
       return created;
+    }
+
+    // Replaces the boundary of a volume by an arbitrary closed mesh (section 6.1.1)
+    void replace_solid(Volume_id v,
+                       const std::vector<Point>& pts,
+                       const std::vector<std::vector<std::size_t>>& faces) {
+      Volume& vol = m_volumes.at(v);
+      std::vector<Dart> old;
+      auto r = lcc.template darts_of_cell<3>(vol.d_origin);
+      for (auto it = r.begin(), e = r.end(); it != e; ++it) {
+        if (!lcc.template is_free<3>(it))
+          throw std::logic_error("lmap: cannot replace a volume that is already glued");
+        old.push_back(Dart(it));
+      }
+      for (Dart d : old) lcc.erase_dart(d);
+
+      build_solid_faces(pts, faces, vol);
+      lcc.template set_attribute<3>(vol.d_origin,
+                                    lcc.template create_attribute<3>(Volume_info{vol.label, vol.color, vol.stage}));
     }
 
     struct Adjacency_candidate {
@@ -494,10 +511,33 @@ namespace lmap {
 
       Frame r;
       r.origin = f.origin;
-      r.ex = geom::normalized(X[0] * f.ex + X[1] * f.ey + X[2] * f.ez);
-      r.ey = geom::normalized(Y[0] * f.ex + Y[1] * f.ey + Y[2] * f.ez);
-      r.ez = geom::normalized(Z[0] * f.ex + Z[1] * f.ey + Z[2] * f.ez);
+      r.ex = normalized(X[0] * f.ex + X[1] * f.ey + X[2] * f.ez);
+      r.ey = normalized(Y[0] * f.ex + Y[1] * f.ey + Y[2] * f.ez);
+      r.ez = normalized(Z[0] * f.ex + Z[1] * f.ey + Z[2] * f.ez);
       return r;
+    }
+
+    void build_solid_faces(const std::vector<Point>& pts,
+                           const std::vector<std::vector<std::size_t>>& faces,
+                           Volume& v) {
+      if (faces.size() < 4) throw std::invalid_argument("lmap: solid needs at least 4 faces");
+
+      CGAL::Linear_cell_complex_incremental_builder_3<LCC> builder(lcc);
+      for (const Point& p : pts) builder.add_vertex(p);
+
+      builder.begin_surface();
+      std::vector<Dart> fd;
+      fd.reserve(faces.size());
+      for (const std::vector<std::size_t>& f : faces) {
+        builder.begin_facet();
+        for (std::size_t i : f) builder.add_vertex_to_facet(i);
+        fd.push_back(builder.end_facet());
+      }
+      builder.end_surface();
+
+      v.d_origin = fd[0];
+      v.d_end = fd[1];
+      v.d_side.assign(fd.begin() + 2, fd.end());
     }
 
     Volume_id emplace_prism(const std::vector<Point>& base,
@@ -616,6 +656,130 @@ namespace lmap {
 
   using Variables = std::map<std::string, double>;
 
+  // The [X]#n operator (section 6.1.1)
+  namespace subdivision {
+    struct Mesh {
+      std::vector<Point> points;
+      std::vector<std::vector<std::size_t>> faces;
+    };
+
+    using Edge = std::pair<std::size_t, std::size_t>;
+
+    inline Edge edge_key(std::size_t a, std::size_t b) {
+      return (a < b) ? Edge(a, b) : Edge(b, a);
+    }
+
+    inline Point centroid(const std::vector<Point>& pts, const std::vector<std::size_t>& loop) {
+      double x = 0, y = 0, z = 0;
+      for (std::size_t i : loop) { x += pts[i].x(); y += pts[i].y(); z += pts[i].z(); }
+      const double n = static_cast<double>(loop.size());
+      return Point(x / n, y / n, z / n);
+    }
+
+    inline Mesh extract(const LMap& map, Volume_id v) {
+      Mesh m;
+      std::map<const void*, std::size_t> index;
+      for (const Face_ref& f : Face_selector::all().resolve(map, v)) {
+        const CDart d0 = map.dart_of(f);
+        std::vector<std::size_t> loop;
+        CDart d = d0;
+        do {
+          const void* key = static_cast<const void*>(&map.lcc.point(d));
+          auto it = index.find(key);
+          if (it == index.end()) {
+            it = index.emplace(key, m.points.size()).first;
+            m.points.push_back(map.lcc.point(d));
+          }
+          loop.push_back(it->second);
+          d = map.lcc.next(d);
+        } while (d != d0);
+        m.faces.push_back(loop);
+      }
+      return m;
+    }
+
+    inline Mesh catmull_clark(const Mesh& in) {
+      const std::size_t nv = in.points.size();
+      const std::size_t nf = in.faces.size();
+
+      std::vector<Point> face_pt(nf);
+      for (std::size_t i = 0; i < nf; ++i) face_pt[i] = centroid(in.points, in.faces[i]);
+
+      std::map<Edge, std::vector<std::size_t>> edge_faces;
+      for (std::size_t i = 0; i < nf; ++i) {
+        const std::vector<std::size_t>& f = in.faces[i];
+        for (std::size_t k = 0; k < f.size(); ++k)
+          edge_faces[edge_key(f[k], f[(k + 1) % f.size()])].push_back(i);
+      }
+
+      Mesh out;
+      out.points.resize(nv + nf);
+      for (std::size_t i = 0; i < nf; ++i) out.points[nv + i] = face_pt[i];
+
+      std::map<Edge, std::size_t> edge_pt;
+      for (const auto& kv : edge_faces) {
+        const Point& a = in.points[kv.first.first];
+        const Point& b = in.points[kv.first.second];
+        double x = a.x() + b.x(), y = a.y() + b.y(), z = a.z() + b.z(), w = 2;
+        for (std::size_t fi : kv.second) {
+          x += face_pt[fi].x(); y += face_pt[fi].y(); z += face_pt[fi].z();
+          w += 1;
+        }
+        edge_pt[kv.first] = out.points.size();
+        out.points.push_back(Point(x / w, y / w, z / w));
+      }
+
+      std::vector<double> fx(nv, 0), fy(nv, 0), fz(nv, 0), fn(nv, 0);
+      for (std::size_t i = 0; i < nf; ++i)
+        for (std::size_t j : in.faces[i]) {
+          fx[j] += face_pt[i].x(); fy[j] += face_pt[i].y(); fz[j] += face_pt[i].z();
+          fn[j] += 1;
+        }
+
+      std::vector<double> rx(nv, 0), ry(nv, 0), rz(nv, 0), rn(nv, 0);
+      for (const auto& kv : edge_faces) {
+        const std::size_t a = kv.first.first, b = kv.first.second;
+        const double mx = (in.points[a].x() + in.points[b].x()) / 2;
+        const double my = (in.points[a].y() + in.points[b].y()) / 2;
+        const double mz = (in.points[a].z() + in.points[b].z()) / 2;
+        rx[a] += mx; ry[a] += my; rz[a] += mz; rn[a] += 1;
+        rx[b] += mx; ry[b] += my; rz[b] += mz; rn[b] += 1;
+      }
+
+      for (std::size_t i = 0; i < nv; ++i) {
+        const double n = fn[i];
+        if (n < 3) { out.points[i] = in.points[i]; continue; }
+        const double Fx = fx[i] / n, Fy = fy[i] / n, Fz = fz[i] / n;
+        const double Rx = rx[i] / rn[i], Ry = ry[i] / rn[i], Rz = rz[i] / rn[i];
+        out.points[i] = Point((Fx + 2 * Rx + (n - 3) * in.points[i].x()) / n,
+                              (Fy + 2 * Ry + (n - 3) * in.points[i].y()) / n,
+                              (Fz + 2 * Rz + (n - 3) * in.points[i].z()) / n);
+      }
+
+      for (std::size_t i = 0; i < nf; ++i) {
+        const std::vector<std::size_t>& f = in.faces[i];
+        const std::size_t k = f.size();
+        for (std::size_t j = 0; j < k; ++j) {
+          const std::size_t prev = f[(j + k - 1) % k];
+          const std::size_t cur = f[j];
+          const std::size_t next = f[(j + 1) % k];
+          out.faces.push_back({ cur,
+                                edge_pt[edge_key(cur, next)],
+                                nv + i,
+                                edge_pt[edge_key(prev, cur)] });
+        }
+      }
+      return out;
+    }
+
+    inline void apply(LMap& map, Volume_id v, int times) {
+      if (times <= 0) return;
+      Mesh m = extract(map, v);
+      for (int i = 0; i < times; ++i) m = catmull_clark(m);
+      map.replace_solid(v, m.points, m.faces);
+    }
+  }
+
   class Grammar;
 
   struct Context {
@@ -638,6 +802,9 @@ namespace lmap {
 
     // self_sa | other_sb
     std::size_t adjacency(const Face_selector& sa, const std::string& other_label, const Face_selector& sb) const;
+
+    // [self]#n
+    void subdivide(int times) const;
   };
 
   struct Rule {
@@ -742,6 +909,11 @@ namespace lmap {
   Context::add(const Face_selector& sel, const std::string& label, const Attribute_overload& overload) const {
     const Volume_prototype& p = grammar->prototype(label);
     return map->add(self, sel, label, p.attr, overload, p.color, stage);
+  }
+
+  inline void
+  Context::subdivide(int times) const {
+    subdivision::apply(*map, self, times);
   }
 
   inline std::size_t
