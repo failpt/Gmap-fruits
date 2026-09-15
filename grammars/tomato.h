@@ -5,7 +5,7 @@
 #include <cmath>
 #include <string>
 
-namespace tomato_g_1 {
+namespace grammar_1 {
   struct Parameters {
     double height = 50;
     double width = 50;
