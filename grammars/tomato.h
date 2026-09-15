@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GMAP_FRUITS_TOMATO_H
+#define GMAP_FRUITS_TOMATO_H
 
 #include "../lmap.h"
 
@@ -115,3 +116,5 @@ namespace grammar_1 {
     return map;
   }
 }
+
+#endif //GMAP_FRUITS_TOMATO_H

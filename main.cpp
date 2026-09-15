@@ -1,5 +1,5 @@
 #include "lmap.h"
-#include "tomato/grammar_1.h"
+#include "grammars/tomato.h"
 
 #include <CGAL/Graphics_scene_options.h>
 #include <CGAL/draw_linear_cell_complex.h>
@@ -41,10 +41,10 @@ private:
 int main(int argc, char** argv) {
     int step = 3;
 
-    const tomato_g_1::Parameters params;
-    const tomato_g_1::Step which = static_cast<tomato_g_1::Step>(step);
+    const grammar_1::Parameters params;
+    const grammar_1::Step which = static_cast<grammar_1::Step>(step);
 
-    lmap::LMap model = tomato_g_1::build_round_tomato(params, which);
+    lmap::LMap model = grammar_1::build_round_tomato(params, which);
 
     CGAL::Graphics_scene buffer;
     CGAL::add_to_graphics_scene(model.lcc, buffer, make_gso());

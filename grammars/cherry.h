@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GMAP_FRUITS_CHERRY_H
+#define GMAP_FRUITS_CHERRY_H
 
 #include "../lmap.h"
 
@@ -102,3 +103,5 @@ namespace grammar_2 {
     return map;
   }
 }
+
+#endif //GMAP_FRUITS_CHERRY_H
