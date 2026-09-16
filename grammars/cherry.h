@@ -15,20 +15,16 @@ namespace grammar_2 {
     double meso_size = 50;
   };
 
-  inline const CGAL::IO::Color kStoneColor{205, 175, 130};
-  inline const CGAL::IO::Color kEndocarpColor{198, 30, 46};
-  inline const CGAL::IO::Color kMesocarpColor{198, 48, 56};
-  inline const CGAL::IO::Color kExocarpColor{138, 18, 30};
+  inline const CGAL::IO::Color stone_color{205, 175, 130};
+  inline const CGAL::IO::Color endocarp_color{198, 30, 46};
+  inline const CGAL::IO::Color mesocarp_color{198, 48, 56};
+  inline const CGAL::IO::Color exocarp_color{138, 18, 30};
 
-  enum class Step {
-    Cube = 0,
-    Sphere = 1,
-    Spikes = 2,
-    Shell = 3,
-    Fruit = 7
-  };
+  // One stage subdivides the stone, then each of the three layers takes one
+  // stage to be added and one to be glued.
+  inline int steps(const Parameters&) { return 7; }
 
-  inline lmap::LMap build_cherry(const Parameters& p = {}, Step step = Step::Fruit) {
+  inline lmap::LMap build_cherry(const Parameters& p = {}, int step = 0) {
     using namespace lmap;
 
     Grammar g;
@@ -40,10 +36,10 @@ namespace grammar_2 {
     const Volume_attributes exo(4, 0, 0, 0, p.exo_size, p.exo_size, p.exo_size);
     const Volume_attributes stone(4, 0, 0, 0, p.stone_size, p.stone_size, p.stone_size);
 
-    g.define_volume("EN", endo, kEndocarpColor);
-    g.define_volume("ME", meso, kMesocarpColor);
-    g.define_volume("EX", exo, kExocarpColor);
-    g.define_volume("STONE", stone, kStoneColor);
+    g.define_volume("EN", endo, endocarp_color);
+    g.define_volume("ME", meso, mesocarp_color);
+    g.define_volume("EX", exo, exocarp_color);
+    g.define_volume("STONE", stone, stone_color);
 
     const double h = p.stone_size / 2;
     g.set_axiom("STONE", stone,
@@ -101,7 +97,7 @@ namespace grammar_2 {
     }
 
     LMap map;
-    g.derive(map, static_cast<int>(step));
+    g.derive(map, step < 1 ? steps(p) : step);
     return map;
   }
 }
