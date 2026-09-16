@@ -5,7 +5,7 @@
 
 #include <string>
 
-namespace lime {
+namespace lime_grammar {
   struct Parameters {
     double core_height = 64;
     double fruit_radius = 46;
