@@ -77,10 +77,6 @@ namespace grammar_1 {
     };
     g.add_rule(p01);
 
-    // The rule fires once, on every trunk volume at once, so it recovers each
-    // ring's angle and length from the stage that created that volume: the
-    // volume made at stage k carries ring k+1. The last trunk volume carries no
-    // ring, which is what the old stage < precision guard used to express.
     Rule p02;
     p02.name = "p02";
     p02.predecessor = "TR";
