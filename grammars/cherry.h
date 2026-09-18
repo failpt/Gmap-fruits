@@ -20,8 +20,6 @@ namespace grammar_2 {
   inline const CGAL::IO::Color mesocarp_color{198, 48, 56};
   inline const CGAL::IO::Color exocarp_color{138, 18, 30};
 
-  // One stage subdivides the stone, then each of the three layers takes one
-  // stage to be added and one to be glued.
   inline int steps(const Parameters&) { return 7; }
 
   inline lmap::LMap build_cherry(const Parameters& p = {}, int step = 0) {
