@@ -8,7 +8,7 @@
 namespace grammar_2 {
   struct Parameters {
     double stone_size = 130;
-    int subdiv = 5;
+    int subdiv = 2;
 
     double exo_size = 5;
     double endo_size = 50;

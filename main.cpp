@@ -57,10 +57,10 @@ int show(int argc, char** argv, const lmap::LMap& model, const std::string& titl
   return app.exec();
 }
 
-int pick(int step, int total) {
-  if (step > total)
-    throw std::runtime_error("This fruit's grammar only has 1-" + std::to_string(total) + " steps.");
-  return step < 1 ? total : step;
+int pick(int step, int max, const std::string& condition = "") {
+  if (step > max)
+    throw std::runtime_error("This fruit's grammar only has 1-" + std::to_string(max) + " steps" + condition + ".");
+  return step < 1 ? max : step;
 }
 
 int main(int argc, char** argv) {
@@ -69,30 +69,25 @@ int main(int argc, char** argv) {
 
   const std::string fruit = (n > 1) ? argv[1] : "";
   const int step = (n > 2) ? std::atoi(argv[2]) : 0;
-  const int precision = (n > 3) ? std::atoi(argv[3]) : 0;
 
   if (fruit == "tomato") {
     grammar_1::Parameters p;
-    p.precision = precision > 0 ? precision : 10;
-    const int s = pick(step, grammar_1::steps(p));
-    return show(argc, argv, grammar_1::build_round_tomato(p, s),
-                "Grammar 1, Fig. 4 - step " + std::to_string(s), cut);
+    const std::string condition = " at precision " + std::to_string(p.precision);
+    const int s = pick(step, grammar_1::steps(p), condition);
+    return show(argc, argv, grammar_1::build_round_tomato(p, s), "Grammar 1, Fig. 4 - step", cut);
   }
 
   if (fruit == "cherry") {
     grammar_2::Parameters p;
-    p.subdiv = precision > 0 ? precision : 2;
     const int s = pick(step, grammar_2::steps(p));
-    return show(argc, argv, grammar_2::build_cherry(p, s),
-                "Grammar 2, Fig. 11 - step " + std::to_string(s), cut);
+    return show(argc, argv, grammar_2::build_cherry(p, s), "Grammar 2, Fig. 11 - step", cut);
   }
 
   if (fruit == "lime") {
     lime_grammar::Parameters p;
-    p.precision = precision > 0 ? precision : 10;
-    const int s = pick(step, lime_grammar::steps(p));
-    return show(argc, argv, lime_grammar::build_lime(p, s),
-                "Fig. 13, lime - step " + std::to_string(s), cut);
+    const std::string condition = " at precision " + std::to_string(p.precision);
+    const int s = pick(step, lime_grammar::steps(p), condition);
+    return show(argc, argv, lime_grammar::build_lime(p, s), "Fig. 13, lime - step", cut);
   }
 
   throw std::runtime_error("Pick one of the fruits to display: tomato, cherry, lime.");

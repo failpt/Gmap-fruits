@@ -20,7 +20,7 @@ namespace grammar_1 {
   };
 
   inline const CGAL::IO::Color trunk_color{60, 140, 55};
-  inline const CGAL::IO::Color pericarp_color{235, 120, 35};
+  inline const CGAL::IO::Color pericarp_color{235, 71, 35};
 
   inline double raw_trunk_height(const Parameters& p) {
     const double pi = std::acos(-1.0);
