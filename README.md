@@ -26,8 +26,10 @@ If unspecified, the last step of the grammar is visualized, which with the curre
 The methodology is taken from:
 
 > Evans Bohl, Olivier Terraz and Djamchid Ghazanfarpour.
+> 
 > **[Modeling fruits and their internal structure using parametric 3Gmap L-systems.](https://link.springer.com/article/10.1007/s00371-015-1108-9)**
-> *The Visual Computer* 31, 819-829 (2015).
+> 
+> *The Visual Computer* Volume 31, pages 819–829 (2015).
 
 Grammar 1 (tomato) and Grammar 2 (cherry) are transcribed from the paper, with the order of gluing and adding layers being slightly modified in Grammar 2 for stylistic purposes.
 
