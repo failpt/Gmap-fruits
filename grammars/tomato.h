@@ -58,7 +58,6 @@ namespace grammar_1 {
                     Volume_attributes(p.trunk_order, 0, 0, 0, p.trunk_size, p.trunk_size, p.trunk_size),
                     trunk_color);
 
-    // #axiom: TR(10, 0, 0, 0, 5, 5, 5)
     Frame axiom_frame = Frame::from_ez_ex(Point(0, 0, 0), Vector(0, 0, -1), Vector(1, 0, 0));
     g.set_axiom("TR",
                 Volume_attributes(p.trunk_order, 0, 0, 0, p.trunk_size, p.trunk_size, p.trunk_size),
