@@ -74,20 +74,20 @@ int main(int argc, char** argv) {
     grammar_1::Parameters p;
     const std::string condition = " at precision " + std::to_string(p.precision);
     const int s = pick(step, grammar_1::steps(p), condition);
-    return show(argc, argv, grammar_1::build_round_tomato(p, s), "Grammar 1, Fig. 4 - step", cut);
+    return show(argc, argv, grammar_1::build_round_tomato(p, s), "Grammar 1, Fig. 4 - step " + std::to_string(s), cut);
   }
 
   if (fruit == "cherry") {
     grammar_2::Parameters p;
     const int s = pick(step, grammar_2::steps(p));
-    return show(argc, argv, grammar_2::build_cherry(p, s), "Grammar 2, Fig. 11 - step", cut);
+    return show(argc, argv, grammar_2::build_cherry(p, s), "Grammar 2, Fig. 11 - step " + std::to_string(s), cut);
   }
 
   if (fruit == "lime") {
     lime_grammar::Parameters p;
     const std::string condition = " at precision " + std::to_string(p.precision);
     const int s = pick(step, lime_grammar::steps(p), condition);
-    return show(argc, argv, lime_grammar::build_lime(p, s), "Fig. 13, lime - step", cut);
+    return show(argc, argv, lime_grammar::build_lime(p, s), "Fig. 13, lime - step " + std::to_string(s), cut);
   }
 
   throw std::runtime_error("Pick one of the fruits to display: tomato, cherry, lime.");
